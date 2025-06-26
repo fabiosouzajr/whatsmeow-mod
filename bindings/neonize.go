@@ -30,7 +30,7 @@ func GetMessage(storePtr unsafe.Pointer, uuid *C.char, chatJIDStr *C.char, messa
 	if err != nil {
 		return C.int(1)
 	}
-	msg, err := store.Neonize.GetMessage(userJID, chatJID, C.GoString(messageID))
+	msg, err := store.Neonize.GetMessage([]byte(userJID.String()), chatJID, C.GoString(messageID))
 	if err != nil {
 		return C.int(1)
 	}
@@ -59,7 +59,7 @@ func GetMedia(storePtr unsafe.Pointer, uuid *C.char, mediaID *C.char, result **C
 	if err != nil {
 		return C.int(1)
 	}
-	media, err := store.Neonize.GetMedia(userJID, C.GoString(mediaID))
+	media, err := store.Neonize.GetMedia([]byte(userJID.String()), C.GoString(mediaID))
 	if err != nil {
 		return C.int(1)
 	}

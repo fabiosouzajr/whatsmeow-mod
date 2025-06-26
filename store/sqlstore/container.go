@@ -286,3 +286,8 @@ func (c *Container) DeleteDevice(ctx context.Context, store *store.Device) error
 	_, err := c.db.Exec(ctx, deleteDeviceQuery, store.ID)
 	return err
 }
+
+// GetDatabase returns the underlying database for use by extensions like the scheduler
+func (c *Container) GetDatabase() *dbutil.Database {
+	return c.db
+}
