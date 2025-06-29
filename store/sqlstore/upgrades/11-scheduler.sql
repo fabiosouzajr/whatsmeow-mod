@@ -1,3 +1,4 @@
+-- v10 -> v11: Add scheduler-specific tables
 -- Enhanced Message Templates
 -- This table allows for creating and managing message templates with advanced features
 CREATE TABLE IF NOT EXISTS sched_message_templates (
@@ -260,3 +261,4 @@ CREATE TABLE IF NOT EXISTS sched_frequency_executions (
     error_message TEXT,
     FOREIGN KEY (frequency_id) REFERENCES sched_frequencies(id) ON DELETE CASCADE
 );
+

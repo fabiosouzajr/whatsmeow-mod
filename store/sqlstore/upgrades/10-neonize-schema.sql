@@ -110,3 +110,4 @@ CREATE TABLE whatsmeow_calls (
     PRIMARY KEY (our_jid, call_id),
     FOREIGN KEY (our_jid) REFERENCES whatsmeow_device(jid) ON DELETE CASCADE ON UPDATE CASCADE
 ); 
+
