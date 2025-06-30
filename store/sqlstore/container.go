@@ -274,6 +274,12 @@ func (c *Container) initializeDevice(device *store.Device) {
 	device.PrivacyTokens = innerStore
 	device.EventBuffer = innerStore
 	device.LIDs = c.LIDMap
+
+	// Initialize new chat history stores
+	device.ChatHistory = &ChatHistoryStore{innerStore}
+	device.Conversations = &ConversationStore{innerStore}
+	device.MessageSearch = &MessageSearchStore{innerStore}
+
 	device.Container = c
 	device.Initialized = true
 }

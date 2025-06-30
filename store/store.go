@@ -153,6 +153,53 @@ type LIDStore interface {
 	GetLIDForPN(ctx context.Context, pn types.JID) (types.JID, error)
 }
 
+// ChatHistoryStore interface for storing and retrieving message history
+type ChatHistoryStore interface {
+	StoreMessage(ctx context.Context, msg *types.StoredMessage) error
+	GetMessages(ctx context.Context, query types.ChatHistoryQuery) ([]*types.StoredMessage, error)
+	GetMessage(ctx context.Context, chat types.JID, messageID types.MessageID) (*types.StoredMessage, error)
+	UpdateMessage(ctx context.Context, msg *types.StoredMessage) error
+	DeleteMessage(ctx context.Context, chat types.JID, messageID types.MessageID) error
+	GetMessageCount(ctx context.Context, chat types.JID) (int64, error)
+	GetLastMessage(ctx context.Context, chat types.JID) (*types.StoredMessage, error)
+
+	// Message reactions
+	StoreReaction(ctx context.Context, reaction *types.MessageReaction) error
+	GetReactions(ctx context.Context, chat types.JID, messageID types.MessageID) ([]*types.MessageReaction, error)
+	DeleteReaction(ctx context.Context, chat types.JID, messageID types.MessageID, sender types.JID) error
+
+	// Message forwarding
+	StoreForward(ctx context.Context, forward *types.MessageForward) error
+	GetForward(ctx context.Context, chat types.JID, messageID types.MessageID) (*types.MessageForward, error)
+}
+
+// ConversationStore interface for managing conversation metadata
+type ConversationStore interface {
+	StoreConversation(ctx context.Context, conv *types.ConversationInfo) error
+	GetConversation(ctx context.Context, chat types.JID) (*types.ConversationInfo, error)
+	GetAllConversations(ctx context.Context) ([]*types.ConversationInfo, error)
+	UpdateConversation(ctx context.Context, conv *types.ConversationInfo) error
+	DeleteConversation(ctx context.Context, chat types.JID) error
+
+	// Conversation settings
+	ArchiveConversation(ctx context.Context, chat types.JID, archived bool) error
+	PinConversation(ctx context.Context, chat types.JID, pinned bool) error
+	MuteConversation(ctx context.Context, chat types.JID, mutedUntil *time.Time) error
+
+	// Group-specific operations
+	UpdateGroupParticipants(ctx context.Context, chat types.JID, participants []types.JID) error
+	UpdateGroupAdmins(ctx context.Context, chat types.JID, admins []types.JID) error
+	UpdateGroupInviteLink(ctx context.Context, chat types.JID, link *string) error
+}
+
+// MessageSearchStore interface for message search functionality
+type MessageSearchStore interface {
+	SearchMessages(ctx context.Context, query string, chat *types.JID, limit int) ([]*types.MessageSearchResult, error)
+	IndexMessage(ctx context.Context, msg *types.StoredMessage) error
+	RemoveMessageFromIndex(ctx context.Context, chat types.JID, messageID types.MessageID) error
+	RebuildSearchIndex(ctx context.Context) error
+}
+
 type AllSessionSpecificStores interface {
 	IdentityStore
 	SessionStore
@@ -165,6 +212,9 @@ type AllSessionSpecificStores interface {
 	MsgSecretStore
 	PrivacyTokenStore
 	EventBuffer
+	ChatHistoryStore
+	ConversationStore
+	MessageSearchStore
 }
 
 type AllGlobalStores interface {
@@ -207,6 +257,9 @@ type Device struct {
 	PrivacyTokens PrivacyTokenStore
 	EventBuffer   EventBuffer
 	LIDs          LIDStore
+	ChatHistory   ChatHistoryStore
+	Conversations ConversationStore
+	MessageSearch MessageSearchStore
 	Container     DeviceContainer
 }
 
