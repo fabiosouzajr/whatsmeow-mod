@@ -37,6 +37,10 @@ var NoopDevice = &Device{
 	MsgSecrets:    nilStore,
 	PrivacyTokens: nilStore,
 	EventBuffer:   nilStore,
+	LIDs:          nilStore,
+	ChatHistory:   nilStore,
+	Conversations: nilStore,
+	MessageSearch: nilStore,
 	Container:     nilStore,
 }
 
@@ -220,31 +224,31 @@ func (n *NoopStore) DeleteDevice(ctx context.Context, store *Device) error {
 }
 
 func (n *NoopStore) GetBufferedEvent(ctx context.Context, ciphertextHash [32]byte) (*BufferedEvent, error) {
-	return nil, nil
+	return nil, n.Error
 }
 
 func (n *NoopStore) PutBufferedEvent(ctx context.Context, ciphertextHash [32]byte, plaintext []byte, serverTimestamp time.Time) error {
-	return nil
+	return n.Error
 }
 
 func (n *NoopStore) DoDecryptionTxn(ctx context.Context, fn func(context.Context) error) error {
-	return fn(ctx)
+	return n.Error
 }
 
 func (n *NoopStore) ClearBufferedEventPlaintext(ctx context.Context, ciphertextHash [32]byte) error {
-	return nil
+	return n.Error
 }
 
 func (n *NoopStore) DeleteOldBufferedHashes(ctx context.Context) error {
-	return nil
+	return n.Error
 }
 
 func (n *NoopStore) GetLIDForPN(ctx context.Context, pn types.JID) (types.JID, error) {
-	return types.JID{}, n.Error
+	return types.EmptyJID, n.Error
 }
 
 func (n *NoopStore) GetPNForLID(ctx context.Context, lid types.JID) (types.JID, error) {
-	return types.JID{}, n.Error
+	return types.EmptyJID, n.Error
 }
 
 func (n *NoopStore) PutManyLIDMappings(ctx context.Context, mappings []LIDMapping) error {
@@ -252,5 +256,116 @@ func (n *NoopStore) PutManyLIDMappings(ctx context.Context, mappings []LIDMappin
 }
 
 func (n *NoopStore) PutLIDMapping(ctx context.Context, lid types.JID, jid types.JID) error {
+	return n.Error
+}
+
+// ChatHistoryStore methods
+func (n *NoopStore) StoreMessage(ctx context.Context, msg *types.StoredMessage) error {
+	return n.Error
+}
+
+func (n *NoopStore) GetMessages(ctx context.Context, query types.ChatHistoryQuery) ([]*types.StoredMessage, error) {
+	return nil, n.Error
+}
+
+func (n *NoopStore) GetMessage(ctx context.Context, chat types.JID, messageID types.MessageID) (*types.StoredMessage, error) {
+	return nil, n.Error
+}
+
+func (n *NoopStore) UpdateMessage(ctx context.Context, msg *types.StoredMessage) error {
+	return n.Error
+}
+
+func (n *NoopStore) DeleteMessage(ctx context.Context, chat types.JID, messageID types.MessageID) error {
+	return n.Error
+}
+
+func (n *NoopStore) GetMessageCount(ctx context.Context, chat types.JID) (int64, error) {
+	return 0, n.Error
+}
+
+func (n *NoopStore) GetLastMessage(ctx context.Context, chat types.JID) (*types.StoredMessage, error) {
+	return nil, n.Error
+}
+
+func (n *NoopStore) StoreReaction(ctx context.Context, reaction *types.MessageReaction) error {
+	return n.Error
+}
+
+func (n *NoopStore) GetReactions(ctx context.Context, chat types.JID, messageID types.MessageID) ([]*types.MessageReaction, error) {
+	return nil, n.Error
+}
+
+func (n *NoopStore) DeleteReaction(ctx context.Context, chat types.JID, messageID types.MessageID, sender types.JID) error {
+	return n.Error
+}
+
+func (n *NoopStore) StoreForward(ctx context.Context, forward *types.MessageForward) error {
+	return n.Error
+}
+
+func (n *NoopStore) GetForward(ctx context.Context, chat types.JID, messageID types.MessageID) (*types.MessageForward, error) {
+	return nil, n.Error
+}
+
+// ConversationStore methods
+func (n *NoopStore) StoreConversation(ctx context.Context, conv *types.ConversationInfo) error {
+	return n.Error
+}
+
+func (n *NoopStore) GetConversation(ctx context.Context, chat types.JID) (*types.ConversationInfo, error) {
+	return nil, n.Error
+}
+
+func (n *NoopStore) GetAllConversations(ctx context.Context) ([]*types.ConversationInfo, error) {
+	return nil, n.Error
+}
+
+func (n *NoopStore) UpdateConversation(ctx context.Context, conv *types.ConversationInfo) error {
+	return n.Error
+}
+
+func (n *NoopStore) DeleteConversation(ctx context.Context, chat types.JID) error {
+	return n.Error
+}
+
+func (n *NoopStore) ArchiveConversation(ctx context.Context, chat types.JID, archived bool) error {
+	return n.Error
+}
+
+func (n *NoopStore) PinConversation(ctx context.Context, chat types.JID, pinned bool) error {
+	return n.Error
+}
+
+func (n *NoopStore) MuteConversation(ctx context.Context, chat types.JID, mutedUntil *time.Time) error {
+	return n.Error
+}
+
+func (n *NoopStore) UpdateGroupParticipants(ctx context.Context, chat types.JID, participants []types.JID) error {
+	return n.Error
+}
+
+func (n *NoopStore) UpdateGroupAdmins(ctx context.Context, chat types.JID, admins []types.JID) error {
+	return n.Error
+}
+
+func (n *NoopStore) UpdateGroupInviteLink(ctx context.Context, chat types.JID, link *string) error {
+	return n.Error
+}
+
+// MessageSearchStore methods
+func (n *NoopStore) SearchMessages(ctx context.Context, query string, chat *types.JID, limit int) ([]*types.MessageSearchResult, error) {
+	return nil, n.Error
+}
+
+func (n *NoopStore) IndexMessage(ctx context.Context, msg *types.StoredMessage) error {
+	return n.Error
+}
+
+func (n *NoopStore) RemoveMessageFromIndex(ctx context.Context, chat types.JID, messageID types.MessageID) error {
+	return n.Error
+}
+
+func (n *NoopStore) RebuildSearchIndex(ctx context.Context) error {
 	return n.Error
 }

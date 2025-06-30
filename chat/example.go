@@ -135,13 +135,19 @@ func ExampleUsage() {
 		Limit: 20,
 	}
 
-	searchResults, stats, err := chatClient.AdvancedSearch(ctx, advancedQuery)
+	advancedSearchResults, stats, err := chatClient.AdvancedSearch(ctx, advancedQuery)
 	if err != nil {
 		log.Printf("Failed to perform advanced search: %v", err)
 	} else {
 		fmt.Printf("Advanced search found %d results in %v\n", stats.TotalResults, stats.SearchTime)
 		fmt.Printf("Search query: %s\n", stats.Query)
 		fmt.Printf("Filters applied: %d\n", stats.FiltersApplied)
+
+		// Extract messages from search results for later use
+		for _, result := range advancedSearchResults {
+			messages = append(messages, result.Message)
+		}
+		fmt.Printf("Retrieved %d messages from search results\n", len(advancedSearchResults))
 	}
 
 	// Example 8: Search by date range

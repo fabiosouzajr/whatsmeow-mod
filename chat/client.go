@@ -42,7 +42,7 @@ func NewChatHistoryClient(client *whatsmeow.Client) *ChatHistoryClient {
 // Setup initializes the chat history system and registers event handlers
 func (c *ChatHistoryClient) Setup() error {
 	// Register the event handler with the client
-	c.client.AddEventHandler(c.handler)
+	c.client.AddEventHandlerWithSuccessStatus(c.handler.HandleEvent)
 	return nil
 }
 
@@ -78,7 +78,7 @@ func (c *ChatHistoryClient) SearchMessages(ctx context.Context, chatJID types.JI
 
 // SearchAllMessages searches for messages across all chats
 func (c *ChatHistoryClient) SearchAllMessages(ctx context.Context, query string, limit int) ([]*types.MessageSearchResult, error) {
-	return c.device.MessageSearch.SearchMessages(ctx, nil, query, limit)
+	return c.device.MessageSearch.SearchMessages(ctx, query, nil, limit)
 }
 
 // GetConversations retrieves all conversations

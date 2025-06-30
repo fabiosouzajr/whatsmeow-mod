@@ -35,7 +35,7 @@ func (s *ConversationStore) StoreConversation(ctx context.Context, conv *types.C
 		lastMessage = &ts
 	}
 
-	_, err := s.db.ExecContext(ctx, `
+	_, err := s.db.Exec(ctx, `
 		INSERT INTO whatsmeow_conversations (
 			our_jid, chat_jid, name, description, is_group, is_broadcast,
 			created_at, last_activity, last_message, is_archived, is_pinned,
@@ -75,7 +75,7 @@ func (s *ConversationStore) StoreConversation(ctx context.Context, conv *types.C
 
 // GetConversation retrieves conversation metadata
 func (s *ConversationStore) GetConversation(ctx context.Context, chat types.JID) (*types.ConversationInfo, error) {
-	row := s.db.QueryRowContext(ctx, `
+	row := s.db.QueryRow(ctx, `
 		SELECT name, description, is_group, is_broadcast, created_at, last_activity, last_message,
 		       is_archived, is_pinned, is_muted, muted_until, group_invite_link, message_count, unread_count
 		FROM whatsmeow_conversations
@@ -138,7 +138,7 @@ func (s *ConversationStore) GetConversation(ctx context.Context, chat types.JID)
 
 // GetAllConversations retrieves all conversations
 func (s *ConversationStore) GetAllConversations(ctx context.Context) ([]*types.ConversationInfo, error) {
-	rows, err := s.db.QueryContext(ctx, `
+	rows, err := s.db.Query(ctx, `
 		SELECT chat_jid, name, description, is_group, is_broadcast, created_at, last_activity, last_message,
 		       is_archived, is_pinned, is_muted, muted_until, group_invite_link, message_count, unread_count
 		FROM whatsmeow_conversations
@@ -208,7 +208,7 @@ func (s *ConversationStore) UpdateConversation(ctx context.Context, conv *types.
 
 // DeleteConversation deletes a conversation
 func (s *ConversationStore) DeleteConversation(ctx context.Context, chat types.JID) error {
-	_, err := s.db.ExecContext(ctx, `
+	_, err := s.db.Exec(ctx, `
 		DELETE FROM whatsmeow_conversations
 		WHERE our_jid = $1 AND chat_jid = $2
 	`, s.JID, chat.String())
@@ -222,7 +222,7 @@ func (s *ConversationStore) DeleteConversation(ctx context.Context, chat types.J
 
 // ArchiveConversation archives or unarchives a conversation
 func (s *ConversationStore) ArchiveConversation(ctx context.Context, chat types.JID, archived bool) error {
-	_, err := s.db.ExecContext(ctx, `
+	_, err := s.db.Exec(ctx, `
 		UPDATE whatsmeow_conversations
 		SET is_archived = $3
 		WHERE our_jid = $1 AND chat_jid = $2
@@ -237,7 +237,7 @@ func (s *ConversationStore) ArchiveConversation(ctx context.Context, chat types.
 
 // PinConversation pins or unpins a conversation
 func (s *ConversationStore) PinConversation(ctx context.Context, chat types.JID, pinned bool) error {
-	_, err := s.db.ExecContext(ctx, `
+	_, err := s.db.Exec(ctx, `
 		UPDATE whatsmeow_conversations
 		SET is_pinned = $3
 		WHERE our_jid = $1 AND chat_jid = $2
@@ -252,13 +252,12 @@ func (s *ConversationStore) PinConversation(ctx context.Context, chat types.JID,
 
 // MuteConversation mutes or unmutes a conversation
 func (s *ConversationStore) MuteConversation(ctx context.Context, chat types.JID, mutedUntil *time.Time) error {
-	var mutedUntilUnix *int64
+	var mutedUntilUnix int64
 	if mutedUntil != nil {
-		ts := mutedUntil.Unix()
-		mutedUntilUnix = &ts
+		mutedUntilUnix = mutedUntil.Unix()
 	}
 
-	_, err := s.db.ExecContext(ctx, `
+	_, err := s.db.Exec(ctx, `
 		UPDATE whatsmeow_conversations
 		SET is_muted = $3, muted_until = $4
 		WHERE our_jid = $1 AND chat_jid = $2
@@ -289,7 +288,7 @@ func (s *ConversationStore) UpdateGroupAdmins(ctx context.Context, chat types.JI
 
 // UpdateGroupInviteLink updates the group invite link
 func (s *ConversationStore) UpdateGroupInviteLink(ctx context.Context, chat types.JID, link *string) error {
-	_, err := s.db.ExecContext(ctx, `
+	_, err := s.db.Exec(ctx, `
 		UPDATE whatsmeow_conversations
 		SET group_invite_link = $3
 		WHERE our_jid = $1 AND chat_jid = $2
@@ -305,9 +304,9 @@ func (s *ConversationStore) UpdateGroupInviteLink(ctx context.Context, chat type
 // updateGroupParticipants updates group participants and admins
 func (s *ConversationStore) updateGroupParticipants(ctx context.Context, chat types.JID, participants []types.JID, admins []types.JID) error {
 	// Delete existing participants
-	_, err := s.db.ExecContext(ctx, `
+	_, err := s.db.Exec(ctx, `
 		DELETE FROM whatsmeow_group_participants
-		WHERE our_jid = $1 AND group_jid = $2
+		WHERE our_jid = $1 AND chat_jid = $2
 	`, s.JID, chat.String())
 	if err != nil {
 		return fmt.Errorf("failed to delete existing participants: %w", err)
@@ -323,10 +322,10 @@ func (s *ConversationStore) updateGroupParticipants(ctx context.Context, chat ty
 			}
 		}
 
-		_, err := s.db.ExecContext(ctx, `
-			INSERT INTO whatsmeow_group_participants (our_jid, group_jid, participant_jid, is_admin, join_timestamp)
-			VALUES ($1, $2, $3, $4, $5)
-		`, s.JID, chat.String(), participant.String(), isAdmin, time.Now().Unix())
+		_, err := s.db.Exec(ctx, `
+			INSERT INTO whatsmeow_group_participants (our_jid, chat_jid, participant_jid, is_admin)
+			VALUES ($1, $2, $3, $4)
+		`, s.JID, chat.String(), participant.String(), isAdmin)
 		if err != nil {
 			return fmt.Errorf("failed to insert participant: %w", err)
 		}
@@ -337,10 +336,10 @@ func (s *ConversationStore) updateGroupParticipants(ctx context.Context, chat ty
 
 // getGroupParticipants retrieves group participants and admins
 func (s *ConversationStore) getGroupParticipants(ctx context.Context, chat types.JID) ([]types.JID, []types.JID, error) {
-	rows, err := s.db.QueryContext(ctx, `
+	rows, err := s.db.Query(ctx, `
 		SELECT participant_jid, is_admin
 		FROM whatsmeow_group_participants
-		WHERE our_jid = $1 AND group_jid = $2
+		WHERE our_jid = $1 AND chat_jid = $2
 	`, s.JID, chat.String())
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to query group participants: %w", err)

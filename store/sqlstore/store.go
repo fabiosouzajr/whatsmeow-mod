@@ -890,8 +890,144 @@ func (s *SQLStore) ClearBufferedEventPlaintext(ctx context.Context, ciphertextHa
 }
 
 func (s *SQLStore) DeleteOldBufferedHashes(ctx context.Context) error {
-	// The WhatsApp servers only buffer events for 14 days,
-	// so we can safely delete anything older than that.
-	_, err := s.db.Exec(ctx, deleteOldBufferedHashesQuery, time.Now().Add(-14*24*time.Hour).UnixMilli())
+	_, err := s.db.Exec(ctx, "DELETE FROM whatsmeow_buffered_events WHERE insert_time < $1", time.Now().Add(-24*time.Hour))
 	return err
+}
+
+// ChatHistoryStore methods
+func (s *SQLStore) StoreMessage(ctx context.Context, msg *types.StoredMessage) error {
+	store := &ChatHistoryStore{s}
+	return store.StoreMessage(ctx, msg)
+}
+
+func (s *SQLStore) GetMessages(ctx context.Context, query types.ChatHistoryQuery) ([]*types.StoredMessage, error) {
+	store := &ChatHistoryStore{s}
+	return store.GetMessages(ctx, query)
+}
+
+func (s *SQLStore) GetMessage(ctx context.Context, chat types.JID, messageID types.MessageID) (*types.StoredMessage, error) {
+	store := &ChatHistoryStore{s}
+	return store.GetMessage(ctx, chat, messageID)
+}
+
+func (s *SQLStore) UpdateMessage(ctx context.Context, msg *types.StoredMessage) error {
+	store := &ChatHistoryStore{s}
+	return store.UpdateMessage(ctx, msg)
+}
+
+func (s *SQLStore) DeleteMessage(ctx context.Context, chat types.JID, messageID types.MessageID) error {
+	store := &ChatHistoryStore{s}
+	return store.DeleteMessage(ctx, chat, messageID)
+}
+
+func (s *SQLStore) GetMessageCount(ctx context.Context, chat types.JID) (int64, error) {
+	store := &ChatHistoryStore{s}
+	return store.GetMessageCount(ctx, chat)
+}
+
+func (s *SQLStore) GetLastMessage(ctx context.Context, chat types.JID) (*types.StoredMessage, error) {
+	store := &ChatHistoryStore{s}
+	return store.GetLastMessage(ctx, chat)
+}
+
+func (s *SQLStore) StoreReaction(ctx context.Context, reaction *types.MessageReaction) error {
+	store := &ChatHistoryStore{s}
+	return store.StoreReaction(ctx, reaction)
+}
+
+func (s *SQLStore) GetReactions(ctx context.Context, chat types.JID, messageID types.MessageID) ([]*types.MessageReaction, error) {
+	store := &ChatHistoryStore{s}
+	return store.GetReactions(ctx, chat, messageID)
+}
+
+func (s *SQLStore) DeleteReaction(ctx context.Context, chat types.JID, messageID types.MessageID, sender types.JID) error {
+	store := &ChatHistoryStore{s}
+	return store.DeleteReaction(ctx, chat, messageID, sender)
+}
+
+func (s *SQLStore) StoreForward(ctx context.Context, forward *types.MessageForward) error {
+	store := &ChatHistoryStore{s}
+	return store.StoreForward(ctx, forward)
+}
+
+func (s *SQLStore) GetForward(ctx context.Context, chat types.JID, messageID types.MessageID) (*types.MessageForward, error) {
+	store := &ChatHistoryStore{s}
+	return store.GetForward(ctx, chat, messageID)
+}
+
+// ConversationStore methods
+func (s *SQLStore) StoreConversation(ctx context.Context, conv *types.ConversationInfo) error {
+	store := &ConversationStore{s}
+	return store.StoreConversation(ctx, conv)
+}
+
+func (s *SQLStore) GetConversation(ctx context.Context, chat types.JID) (*types.ConversationInfo, error) {
+	store := &ConversationStore{s}
+	return store.GetConversation(ctx, chat)
+}
+
+func (s *SQLStore) GetAllConversations(ctx context.Context) ([]*types.ConversationInfo, error) {
+	store := &ConversationStore{s}
+	return store.GetAllConversations(ctx)
+}
+
+func (s *SQLStore) UpdateConversation(ctx context.Context, conv *types.ConversationInfo) error {
+	store := &ConversationStore{s}
+	return store.UpdateConversation(ctx, conv)
+}
+
+func (s *SQLStore) DeleteConversation(ctx context.Context, chat types.JID) error {
+	store := &ConversationStore{s}
+	return store.DeleteConversation(ctx, chat)
+}
+
+func (s *SQLStore) ArchiveConversation(ctx context.Context, chat types.JID, archived bool) error {
+	store := &ConversationStore{s}
+	return store.ArchiveConversation(ctx, chat, archived)
+}
+
+func (s *SQLStore) PinConversation(ctx context.Context, chat types.JID, pinned bool) error {
+	store := &ConversationStore{s}
+	return store.PinConversation(ctx, chat, pinned)
+}
+
+func (s *SQLStore) MuteConversation(ctx context.Context, chat types.JID, mutedUntil *time.Time) error {
+	store := &ConversationStore{s}
+	return store.MuteConversation(ctx, chat, mutedUntil)
+}
+
+func (s *SQLStore) UpdateGroupParticipants(ctx context.Context, chat types.JID, participants []types.JID) error {
+	store := &ConversationStore{s}
+	return store.UpdateGroupParticipants(ctx, chat, participants)
+}
+
+func (s *SQLStore) UpdateGroupAdmins(ctx context.Context, chat types.JID, admins []types.JID) error {
+	store := &ConversationStore{s}
+	return store.UpdateGroupAdmins(ctx, chat, admins)
+}
+
+func (s *SQLStore) UpdateGroupInviteLink(ctx context.Context, chat types.JID, link *string) error {
+	store := &ConversationStore{s}
+	return store.UpdateGroupInviteLink(ctx, chat, link)
+}
+
+// MessageSearchStore methods
+func (s *SQLStore) SearchMessages(ctx context.Context, query string, chat *types.JID, limit int) ([]*types.MessageSearchResult, error) {
+	store := &MessageSearchStore{s}
+	return store.SearchMessages(ctx, query, chat, limit)
+}
+
+func (s *SQLStore) IndexMessage(ctx context.Context, msg *types.StoredMessage) error {
+	store := &MessageSearchStore{s}
+	return store.IndexMessage(ctx, msg)
+}
+
+func (s *SQLStore) RemoveMessageFromIndex(ctx context.Context, chat types.JID, messageID types.MessageID) error {
+	store := &MessageSearchStore{s}
+	return store.RemoveMessageFromIndex(ctx, chat, messageID)
+}
+
+func (s *SQLStore) RebuildSearchIndex(ctx context.Context) error {
+	store := &MessageSearchStore{s}
+	return store.RebuildSearchIndex(ctx)
 }

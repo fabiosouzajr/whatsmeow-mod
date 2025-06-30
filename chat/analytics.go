@@ -282,7 +282,7 @@ func (a *MessageAnalyticsEngine) GetConversationAnalytics(ctx context.Context, c
 	convAnalytics.MostActiveDay = mostActiveDay
 
 	// Convert sender stats to slice and sort by message count
-	for sender, stats := range senderStats {
+	for _, stats := range senderStats {
 		convAnalytics.TopSenders = append(convAnalytics.TopSenders, stats)
 	}
 	sort.Slice(convAnalytics.TopSenders, func(i, j int) bool {

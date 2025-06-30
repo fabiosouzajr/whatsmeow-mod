@@ -16,8 +16,9 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	"go.mau.fi/util/dbutil"
+	waE2E "go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types"
-	"go.mau.fi/whatsmeow/util/dbutil"
 )
 
 // ChatHistoryStore implements store.ChatHistoryStore for SQL databases
@@ -96,7 +97,7 @@ func (s *ChatHistoryStore) StoreMessage(ctx context.Context, msg *types.StoredMe
 		category = msg.Category
 	}
 
-	_, err = s.db.ExecContext(ctx, `
+	_, err = s.db.Exec(ctx, `
 		INSERT INTO whatsmeow_chat_messages (
 			our_jid, chat_jid, message_id, sender_jid, timestamp,
 			message_content, message_type, is_from_me, is_group, is_edited, is_revoked, edit_timestamp,
@@ -189,7 +190,7 @@ func (s *ChatHistoryStore) GetMessages(ctx context.Context, query types.ChatHist
 		%s
 	`, whereClause, limitClause)
 
-	rows, err := s.db.QueryContext(ctx, sqlQuery, args...)
+	rows, err := s.db.Query(ctx, sqlQuery, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query messages: %w", err)
 	}
@@ -209,7 +210,7 @@ func (s *ChatHistoryStore) GetMessages(ctx context.Context, query types.ChatHist
 
 // GetMessage retrieves a specific message
 func (s *ChatHistoryStore) GetMessage(ctx context.Context, chat types.JID, messageID types.MessageID) (*types.StoredMessage, error) {
-	row := s.db.QueryRowContext(ctx, `
+	row := s.db.QueryRow(ctx, `
 		SELECT message_id, sender_jid, timestamp, message_content, message_type,
 		       is_from_me, is_group, is_edited, is_revoked, edit_timestamp,
 		       reply_to_message_id, reply_to_sender_jid, thread_message_id, thread_sender_jid,
@@ -230,7 +231,7 @@ func (s *ChatHistoryStore) UpdateMessage(ctx context.Context, msg *types.StoredM
 
 // DeleteMessage deletes a message from the chat history
 func (s *ChatHistoryStore) DeleteMessage(ctx context.Context, chat types.JID, messageID types.MessageID) error {
-	_, err := s.db.ExecContext(ctx, `
+	_, err := s.db.Exec(ctx, `
 		DELETE FROM whatsmeow_chat_messages
 		WHERE our_jid = $1 AND chat_jid = $2 AND message_id = $3
 	`, s.JID, chat.String(), messageID)
@@ -245,7 +246,7 @@ func (s *ChatHistoryStore) DeleteMessage(ctx context.Context, chat types.JID, me
 // GetMessageCount returns the number of messages in a chat
 func (s *ChatHistoryStore) GetMessageCount(ctx context.Context, chat types.JID) (int64, error) {
 	var count int64
-	err := s.db.QueryRowContext(ctx, `
+	err := s.db.QueryRow(ctx, `
 		SELECT COUNT(*) FROM whatsmeow_chat_messages
 		WHERE our_jid = $1 AND chat_jid = $2
 	`, s.JID, chat.String()).Scan(&count)
@@ -259,7 +260,7 @@ func (s *ChatHistoryStore) GetMessageCount(ctx context.Context, chat types.JID) 
 
 // GetLastMessage returns the most recent message in a chat
 func (s *ChatHistoryStore) GetLastMessage(ctx context.Context, chat types.JID) (*types.StoredMessage, error) {
-	row := s.db.QueryRowContext(ctx, `
+	row := s.db.QueryRow(ctx, `
 		SELECT message_id, sender_jid, timestamp, message_content, message_type,
 		       is_from_me, is_group, is_edited, is_revoked, edit_timestamp,
 		       reply_to_message_id, reply_to_sender_jid, thread_message_id, thread_sender_jid,
@@ -276,7 +277,7 @@ func (s *ChatHistoryStore) GetLastMessage(ctx context.Context, chat types.JID) (
 
 // StoreReaction stores a message reaction
 func (s *ChatHistoryStore) StoreReaction(ctx context.Context, reaction *types.MessageReaction) error {
-	_, err := s.db.ExecContext(ctx, `
+	_, err := s.db.Exec(ctx, `
 		INSERT INTO whatsmeow_message_reactions (our_jid, chat_jid, message_id, sender_jid, emoji, timestamp)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		ON CONFLICT (our_jid, chat_jid, message_id, sender_jid) DO UPDATE SET
@@ -293,7 +294,7 @@ func (s *ChatHistoryStore) StoreReaction(ctx context.Context, reaction *types.Me
 
 // GetReactions retrieves all reactions for a message
 func (s *ChatHistoryStore) GetReactions(ctx context.Context, chat types.JID, messageID types.MessageID) ([]*types.MessageReaction, error) {
-	rows, err := s.db.QueryContext(ctx, `
+	rows, err := s.db.Query(ctx, `
 		SELECT sender_jid, emoji, timestamp
 		FROM whatsmeow_message_reactions
 		WHERE our_jid = $1 AND chat_jid = $2 AND message_id = $3
@@ -331,7 +332,7 @@ func (s *ChatHistoryStore) GetReactions(ctx context.Context, chat types.JID, mes
 
 // DeleteReaction deletes a specific reaction
 func (s *ChatHistoryStore) DeleteReaction(ctx context.Context, chat types.JID, messageID types.MessageID, sender types.JID) error {
-	_, err := s.db.ExecContext(ctx, `
+	_, err := s.db.Exec(ctx, `
 		DELETE FROM whatsmeow_message_reactions
 		WHERE our_jid = $1 AND chat_jid = $2 AND message_id = $3 AND sender_jid = $4
 	`, s.JID, chat.String(), messageID, sender.String())
@@ -345,7 +346,7 @@ func (s *ChatHistoryStore) DeleteReaction(ctx context.Context, chat types.JID, m
 
 // StoreForward stores message forwarding metadata
 func (s *ChatHistoryStore) StoreForward(ctx context.Context, forward *types.MessageForward) error {
-	_, err := s.db.ExecContext(ctx, `
+	_, err := s.db.Exec(ctx, `
 		INSERT INTO whatsmeow_message_forwards (
 			our_jid, chat_jid, message_id, original_message_id, original_chat_jid,
 			original_sender_jid, original_timestamp, forward_timestamp
@@ -367,7 +368,7 @@ func (s *ChatHistoryStore) StoreForward(ctx context.Context, forward *types.Mess
 
 // GetForward retrieves forwarding metadata for a message
 func (s *ChatHistoryStore) GetForward(ctx context.Context, chat types.JID, messageID types.MessageID) (*types.MessageForward, error) {
-	row := s.db.QueryRowContext(ctx, `
+	row := s.db.QueryRow(ctx, `
 		SELECT original_message_id, original_chat_jid, original_sender_jid, original_timestamp, forward_timestamp
 		FROM whatsmeow_message_forwards
 		WHERE our_jid = $1 AND chat_jid = $2 AND message_id = $3
@@ -435,10 +436,13 @@ func (s *ChatHistoryStore) scanMessage(row dbutil.Scannable) (*types.StoredMessa
 	}
 
 	// Unmarshal message content
-	var message proto.Message
+	var message *waE2E.Message
 	if len(messageContent) > 0 {
-		// This is a simplified version - you'll need to properly unmarshal based on message type
-		message = &types.Message{} // Placeholder
+		msg := &waE2E.Message{}
+		err := proto.Unmarshal(messageContent, msg)
+		if err == nil {
+			message = msg
+		}
 	}
 
 	// Build the message
