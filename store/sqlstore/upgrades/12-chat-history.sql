@@ -1,4 +1,4 @@
--- v11 -> v12: Add chat history and conversation management tables
+-- v11 -> v12: Add chat history and conversation management tables (SQLite compatible)
 
 -- Enhanced message storage with better indexing and metadata
 CREATE TABLE whatsmeow_chat_messages (
@@ -9,7 +9,7 @@ CREATE TABLE whatsmeow_chat_messages (
     timestamp BIGINT NOT NULL,
     
     -- Message content (serialized protobuf)
-    message_content BYTEA,
+    message_content BLOB,
     message_type TEXT NOT NULL,
     
     -- Message metadata
@@ -38,7 +38,7 @@ CREATE TABLE whatsmeow_chat_messages (
     
     -- Additional metadata
     push_name TEXT,
-    verified_name_details BYTEA,
+    verified_name_details BLOB,
     category TEXT,
     multicast BOOLEAN NOT NULL DEFAULT FALSE,
     
@@ -55,8 +55,8 @@ CREATE INDEX idx_chat_messages_sender ON whatsmeow_chat_messages(our_jid, chat_j
 CREATE INDEX idx_chat_messages_type ON whatsmeow_chat_messages(our_jid, chat_jid, message_type);
 CREATE INDEX idx_chat_messages_search ON whatsmeow_chat_messages(our_jid, chat_jid) WHERE search_text IS NOT NULL;
 
--- Full-text search index (PostgreSQL specific)
-CREATE INDEX idx_chat_messages_search_fts ON whatsmeow_chat_messages USING gin(to_tsvector('english', search_text)) WHERE search_text IS NOT NULL;
+-- Full-text search index (PostgreSQL specific, removed for SQLite)
+-- CREATE INDEX idx_chat_messages_search_fts ON whatsmeow_chat_messages USING gin(to_tsvector('english', search_text)) WHERE search_text IS NOT NULL;
 
 -- Conversation metadata table
 CREATE TABLE whatsmeow_conversations (
@@ -97,7 +97,7 @@ CREATE INDEX idx_conversations_archived ON whatsmeow_conversations(our_jid, is_a
 CREATE INDEX idx_conversations_pinned ON whatsmeow_conversations(our_jid, is_pinned DESC, last_activity DESC);
 
 -- Group participants table
-CREATE TABLE whatsmeow_group_participants (
+CREATE TABLE IF NOT EXISTS whatsmeow_group_participants (
     our_jid TEXT,
     group_jid TEXT,
     participant_jid TEXT,
@@ -136,37 +136,36 @@ CREATE TABLE whatsmeow_message_forwards (
     FOREIGN KEY (our_jid, chat_jid, message_id) REFERENCES whatsmeow_chat_messages(our_jid, chat_jid, message_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- Search index table for better search performance
-CREATE TABLE whatsmeow_message_search_index (
-    our_jid TEXT,
-    chat_jid TEXT,
-    message_id TEXT,
-    search_vector tsvector,
-    
-    PRIMARY KEY (our_jid, chat_jid, message_id),
-    FOREIGN KEY (our_jid, chat_jid, message_id) REFERENCES whatsmeow_chat_messages(our_jid, chat_jid, message_id) ON DELETE CASCADE ON UPDATE CASCADE
-);
+-- Search index table for better search performance (PostgreSQL only, removed for SQLite)
+-- CREATE TABLE whatsmeow_message_search_index (
+--     our_jid TEXT,
+--     chat_jid TEXT,
+--     message_id TEXT,
+--     search_vector tsvector,
+--     PRIMARY KEY (our_jid, chat_jid, message_id),
+--     FOREIGN KEY (our_jid, chat_jid, message_id) REFERENCES whatsmeow_chat_messages(our_jid, chat_jid, message_id) ON DELETE CASCADE ON UPDATE CASCADE
+-- );
 
--- Index for full-text search
-CREATE INDEX idx_message_search_vector ON whatsmeow_message_search_index USING gin(search_vector);
+-- Index for full-text search (PostgreSQL only, removed for SQLite)
+-- CREATE INDEX idx_message_search_vector ON whatsmeow_message_search_index USING gin(search_vector);
 
--- Triggers for automatic search index updates
-CREATE OR REPLACE FUNCTION update_message_search_index() RETURNS TRIGGER AS $$
-BEGIN
-    IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN
-        INSERT INTO whatsmeow_message_search_index (our_jid, chat_jid, message_id, search_vector)
-        VALUES (NEW.our_jid, NEW.chat_jid, NEW.message_id, to_tsvector('english', COALESCE(NEW.search_text, '')))
-        ON CONFLICT (our_jid, chat_jid, message_id) DO UPDATE SET
-            search_vector = to_tsvector('english', COALESCE(NEW.search_text, ''));
-        RETURN NEW;
-    ELSIF TG_OP = 'DELETE' THEN
-        DELETE FROM whatsmeow_message_search_index WHERE our_jid = OLD.our_jid AND chat_jid = OLD.chat_jid AND message_id = OLD.message_id;
-        RETURN OLD;
-    END IF;
-    RETURN NULL;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trigger_update_message_search_index
-    AFTER INSERT OR UPDATE OR DELETE ON whatsmeow_chat_messages
-    FOR EACH ROW EXECUTE FUNCTION update_message_search_index(); 
+-- Triggers for automatic search index updates (PostgreSQL only, removed for SQLite)
+-- CREATE OR REPLACE FUNCTION update_message_search_index() RETURNS TRIGGER AS $$
+-- BEGIN
+--     IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN
+--         INSERT INTO whatsmeow_message_search_index (our_jid, chat_jid, message_id, search_vector)
+--         VALUES (NEW.our_jid, NEW.chat_jid, NEW.message_id, to_tsvector('english', COALESCE(NEW.search_text, '')))
+--         ON CONFLICT (our_jid, chat_jid, message_id) DO UPDATE SET
+--             search_vector = to_tsvector('english', COALESCE(NEW.search_text, ''));
+--         RETURN NEW;
+--     ELSIF TG_OP = 'DELETE' THEN
+--         DELETE FROM whatsmeow_message_search_index WHERE our_jid = OLD.our_jid AND chat_jid = OLD.chat_jid AND message_id = OLD.message_id;
+--         RETURN OLD;
+--     END IF;
+--     RETURN NULL;
+-- END;
+-- $$ LANGUAGE plpgsql;
+--
+-- CREATE TRIGGER trigger_update_message_search_index
+--     AFTER INSERT OR UPDATE OR DELETE ON whatsmeow_chat_messages
+--     FOR EACH ROW EXECUTE FUNCTION update_message_search_index(); 

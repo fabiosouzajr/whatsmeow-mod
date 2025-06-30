@@ -46,6 +46,16 @@ func (c *ChatHistoryClient) Setup() error {
 	return nil
 }
 
+// GetClient returns the underlying WhatsApp client
+func (c *ChatHistoryClient) GetClient() *whatsmeow.Client {
+	return c.client
+}
+
+// GetDevice returns the underlying device store
+func (c *ChatHistoryClient) GetDevice() *store.Device {
+	return c.device
+}
+
 // GetMessages retrieves messages from a chat with optional filtering
 func (c *ChatHistoryClient) GetMessages(ctx context.Context, chatJID types.JID, options *types.ChatHistoryQuery) ([]*types.StoredMessage, error) {
 	if options == nil {

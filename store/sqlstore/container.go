@@ -147,7 +147,7 @@ func (c *Container) scanDevice(row dbutil.Scannable) (*store.Device, error) {
 	device.Account = &account
 	device.FacebookUUID = fbUUID.UUID
 
-	c.initializeDevice(&device)
+	c.InitializeDevice(&device)
 
 	return &device, nil
 }
@@ -228,6 +228,11 @@ func (c *Container) NewDevice() *store.Device {
 		AdvSecretKey:   random.Bytes(32),
 	}
 	device.SignedPreKey = device.IdentityKey.CreateSignedPreKey(1)
+
+	// Don't initialize stores yet - device.ID is nil for new devices
+	// Stores will be initialized after pairing when we have a valid JID
+	device.Container = c
+
 	return device
 }
 
@@ -255,12 +260,12 @@ func (c *Container) PutDevice(ctx context.Context, device *store.Device) error {
 		device.Platform, device.BusinessName, device.PushName, uuid.NullUUID{UUID: device.FacebookUUID, Valid: device.FacebookUUID != uuid.Nil})
 
 	if !device.Initialized {
-		c.initializeDevice(device)
+		c.InitializeDevice(device)
 	}
 	return err
 }
 
-func (c *Container) initializeDevice(device *store.Device) {
+func (c *Container) InitializeDevice(device *store.Device) {
 	innerStore := NewSQLStore(c, *device.ID)
 	device.Identities = innerStore
 	device.Sessions = innerStore
